@@ -30,12 +30,21 @@
     .skip-tag { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
     .skip-tag button { background: #ef4444; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-    /* QRコードモーダル画面 */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-    .modal-content { background: #fff; color: #1e293b; padding: 30px; border-radius: 20px; text-align: center; max-width: 360px; width: 90%; }
+    /* モーダル共通スタイル */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: #fff; color: #1e293b; padding: 25px; border-radius: 20px; text-align: center; max-width: 380px; width: 90%; box-sizing: border-box; }
+    
+    /* 呼び出しモーダル専用スタイル */
+    .modal-call-content { background: #1e293b; color: #f8fafc; text-align: left; border: 1px solid #334155; }
+    .call-option-box { background: #0f172a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
+    .call-option-title { font-size: 12px; color: #94a3b8; font-weight: bold; margin-bottom: 8px; }
+    .direct-input-group { display: flex; gap: 8px; }
+    .direct-input-group input { flex: 1; padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #fff; }
+    .btn-call-sub { background: #3b82f6; color: white; border: none; padding: 10px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+
     .qr-container { background: #fff; padding: 15px; display: inline-block; border-radius: 12px; margin: 15px 0; border: 1px solid #e2e8f0; }
     .btn-print { background: #0f172a; color: white; border: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-right: 8px; }
-    .btn-close { background: #94a3b8; color: white; border: none; padding: 12px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+    .btn-close { background: #64748b; color: white; border: none; padding: 12px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
 
     .btn-reset { background: #ef4444; color: white; border: none; padding: 10px; font-size: 12px; border-radius: 8px; cursor: pointer; opacity: 0.6; }
     .status-msg { margin-top: 15px; font-size: 13px; color: #f59e0b; }
@@ -67,16 +76,16 @@
     <div class="status-grid">
       <div class="status-card">
         <div class="status-title">現在呼び出し中</div>
-        <div class="status-num" id="currentNum">0</div>
+        <div class="status-num" id="currentNum">0 番</div>
       </div>
       <div class="status-card">
         <div class="status-title">本日発行数</div>
-        <div class="status-num" id="maxNum" style="color: #a855f7;">0</div>
+        <div class="status-num" id="maxNum" style="color: #a855f7;">0 番</div>
       </div>
     </div>
 
-    <!-- メイン操作ボタン -->
-    <button class="btn-next" onclick="nextCustomer()">📢 次の方を呼び出す（LINE通知）</button>
+    <!-- メイン操作ボタン（呼び出しモーダルを開く） -->
+    <button class="btn-next" onclick="openCallModal()">📢 呼び出しパネルを開く</button>
     <button class="btn-skip" onclick="skipCustomer()">⚠️ 不在のためスキップ（保留）</button>
 
     <!-- スキップ（不在）リスト -->
@@ -97,7 +106,41 @@
     </div>
   </div>
 
-  <!-- モーダル・印刷エリア -->
+  <!-- 💡 新設：呼び出し選択モーダル -->
+  <div class="modal" id="callModal">
+    <div class="modal-content modal-call-content">
+      <h2 style="font-size: 18px; margin-top: 0; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 10px;">📢 呼び出し番号の選択</h2>
+      
+      <!-- ① 次の順番を呼ぶ -->
+      <div class="call-option-box">
+        <div class="call-option-title">次の順番の方を呼び出す</div>
+        <button class="btn-next" style="font-size: 16px; padding: 12px; margin-bottom: 0;" onclick="callNextCustomer()">
+          <span id="nextCallBtnText">次の方を呼び出す</span>
+        </button>
+      </div>
+
+      <!-- ② 番号を直接指定して呼ぶ -->
+      <div class="call-option-box">
+        <div class="call-option-title">番号を直接指定して呼び出す</div>
+        <div class="direct-input-group">
+          <input type="number" id="customNumInput" placeholder="例: 8">
+          <button class="btn-call-sub" onclick="callCustomNumber()">呼び出し</button>
+        </div>
+      </div>
+
+      <!-- ③ スキップ（不在）中の番号から選んで呼ぶ -->
+      <div class="call-option-box" style="margin-bottom: 0;">
+        <div class="call-option-title">不在リストから再呼び出し</div>
+        <div class="skipped-tags" id="modalSkipList">
+          <span style="font-size: 12px; color: #64748b;">不在中の番号はありません</span>
+        </div>
+      </div>
+
+      <button class="btn-close" onclick="closeCallModal()">閉じる</button>
+    </div>
+  </div>
+
+  <!-- QRコードモーダル画面 -->
   <div class="modal" id="qrModal">
     <div class="modal-content" id="printArea">
       <h2 style="font-size: 22px; margin-bottom: 5px;" id="modalShopName">順番待ち受付</h2>
@@ -111,7 +154,7 @@
 
       <div class="no-print">
         <button class="btn-print" onclick="window.print()">🖨️ 印刷する</button>
-        <button class="btn-close" onclick="closeQRModal()">閉じる</button>
+        <button class="btn-close" style="background:#94a3b8; width:auto;" onclick="closeQRModal()">閉じる</button>
       </div>
     </div>
   </div>
@@ -122,7 +165,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script>
-    // 💡 実際の Firebase 設定情報をセット済み
     const firebaseConfig = {
       apiKey: "AIzaSyAtWL5QTMOKHUZfb9MZoAt4NtBue2SNd7E",
       authDomain: "qr-customer-call.firebaseapp.com",
@@ -138,6 +180,7 @@
 
     let currentShopId = 'shop1';
     let unsubscribe = null;
+    let shopDataCache = { current: 0, max: 0, skips: [], userIds: {} };
 
     function switchShop() {
       currentShopId = document.getElementById('shopSelect').value;
@@ -150,9 +193,12 @@
           return;
         }
         const data = doc.data();
+        shopDataCache = data; // キャッシュ更新
+        
         document.getElementById('currentNum').innerText = `${data.current || 0} 番`;
         document.getElementById('maxNum').innerText = `${data.max || 0} 番`;
         renderSkips(data.skips || []);
+        updateModalCallInfo();
         showMsg("");
       }, error => {
         console.error("Firestore Error:", error);
@@ -189,38 +235,91 @@
       }
     }
 
-    // 次のお客さんを呼び出す（呼び出し＋自動LINE通知）
-    function nextCustomer() {
+    // 💡 指定された番号を更新してLINE通知を送るコア処理
+    function executeCall(targetNum) {
       const ref = db.collection('queueShops').doc(currentShopId);
       let targetUserId = null;
 
       db.runTransaction(transaction => {
         return transaction.get(ref).then(doc => {
           if (!doc.exists) return;
-          const current = doc.data().current || 0;
-          const max = doc.data().max || 0;
           const userIds = doc.data().userIds || {};
+          let skips = doc.data().skips || [];
 
-          if (current < max) {
-            const nextNum = current + 1;
-            targetUserId = userIds[nextNum] || null; // 発券された LINE User ID を取得
-            transaction.update(ref, { current: nextNum });
-            return nextNum;
-          } else {
-            showMsg("⚠️ 待っているお客さまはいません。");
-            return null;
-          }
+          targetUserId = userIds[targetNum] || null;
+          // もし呼び出した番号がスキップリストにあれば自動除外
+          skips = skips.filter(n => n !== targetNum);
+
+          transaction.update(ref, { current: targetNum, skips: skips });
+          return targetNum;
         });
-      }).then(nextNum => {
-        if (nextNum) {
-          if (targetUserId) {
-            document.getElementById('lineUserId').value = targetUserId;
-          } else {
-            document.getElementById('lineUserId').value = "";
-          }
-          sendLineNotification(nextNum);
+      }).then(num => {
+        if (num) {
+          document.getElementById('lineUserId').value = targetUserId || "";
+          sendLineNotification(num);
+          closeCallModal();
         }
       });
+    }
+
+    // 1. 次の方を順次呼び出す
+    function callNextCustomer() {
+      const current = shopDataCache.current || 0;
+      const max = shopDataCache.max || 0;
+
+      if (current < max) {
+        executeCall(current + 1);
+      } else {
+        alert("待っているお客さまはいません。");
+      }
+    }
+
+    // 2. 直接入力された番号を呼び出す
+    function callCustomNumber() {
+      const input = document.getElementById('customNumInput');
+      const num = parseInt(input.value, 10);
+      if (!num || num <= 0) {
+        alert("正しい番号を入力してください。");
+        return;
+      }
+      executeCall(num);
+      input.value = "";
+    }
+
+    // モーダル開閉制御
+    function openCallModal() {
+      updateModalCallInfo();
+      document.getElementById('callModal').style.display = 'flex';
+    }
+
+    function closeCallModal() {
+      document.getElementById('callModal').style.display = 'none';
+    }
+
+    function updateModalCallInfo() {
+      const current = shopDataCache.current || 0;
+      const max = shopDataCache.max || 0;
+      const nextNum = current + 1;
+
+      const btnText = document.getElementById('nextCallBtnText');
+      if (current < max) {
+        btnText.innerText = `【${nextNum} 番】を順番通り呼び出す`;
+      } else {
+        btnText.innerText = `次の方はいません（本日最大: ${max}番）`;
+      }
+
+      // モーダル内の不在リスト描画
+      const container = document.getElementById('modalSkipList');
+      const skips = shopDataCache.skips || [];
+      if (skips.length === 0) {
+        container.innerHTML = '<span style="font-size: 12px; color: #64748b;">不在中の番号はありません</span>';
+      } else {
+        container.innerHTML = skips.map(num => `
+          <button class="skip-tag" style="cursor:pointer;" onclick="executeCall(${num})">
+            ${num} 番を呼ぶ
+          </button>
+        `).join('');
+      }
     }
 
     // スキップ処理
@@ -259,17 +358,16 @@
       });
     }
 
-    // QRコード表示用モーダルの開閉と生成 (LIFF URL)
+    // QRコードモーダル表示
     function openQRModal() {
       const select = document.getElementById('shopSelect');
       const shopName = select.options[select.selectedIndex].text;
-      
       const targetUrl = `https://liff.line.me/2011502822-9gjbFKnE?shop=${currentShopId}`;
 
       document.getElementById('modalShopName').innerText = `${shopName} 順番待ち受付`;
       document.getElementById('targetUrl').innerText = targetUrl;
-
       document.getElementById('qrcode').innerHTML = "";
+
       new QRCode(document.getElementById('qrcode'), {
         text: targetUrl,
         width: 180,
